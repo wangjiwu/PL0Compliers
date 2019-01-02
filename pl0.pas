@@ -73,35 +73,32 @@ procedure getsym;
   begin
 if cc = ll then
 begin
-  if eof(input) then
-  begin
-    write('PROGRAM INCOMPLETE'); 
-    {added ++++++++++++++++++++++++++++++}
-    close(file_in);	
-    close(file_out);{关闭文件}
-    exit; {退出}
-     {added ++++++++++++++++++++++++++++++}
-  end;
-  ll := 0; cc := 0;  
-  {modify ++++++++++++++++++++++++++++++}
-  write(file_out,cx : 5, ' '); 
-  {modify ++++++++++++++++++++++++++++++}
-  while not eoln(file_in) do {如果不是行末} 
-  begin
-    ll := ll + 1; 
-    {modify ++++++++++++++++++++++++++++++}
-     read(file_in,ch);	{从文件中读取一个字符到ch中}
-     write(file_out,ch); {控制台输出ch}
-    {modify ++++++++++++++++++++++++++++++}
-    line[ll] := ch
-  end;
-  writeln(file_out); {换行}
-  readln(file_in);	{源文件读取从下一行开始}
-  ll := ll + 1;
-  line[ll] := ' ' { process end-line }	
-end;
-cc := cc + 1; ch := line[cc]
-  end {getch};
+   if eof(file_in) {如果已到文件尾} 
+    then begin 
+            write(file_out,'PROGRAM INCOMPLETE'); {报错}
+            close(file_in);	
+            close(file_out);{关闭文件}
+            exit; {退出}
+        end; 
+        {读新的一行} 
+    ll := 0; 
+    cc := 0; 
+ write(file_out,cx : 5, ' '); {cx : 5 位数,输出代码地址，宽度为5} 
+                while not eoln(file_in) do {如果不是行末} 
+                    begin 
+                        ll := ll + 1; {将行缓冲区的长度+1}
+                        read(file_in,ch);	{从文件中读取一个字符到ch中}
+                        write(file_out,ch); {控制台输出ch}
+                        line[ll] := ch {把这个字符放到当前行末尾}
+                    end; 
+                writeln(file_out); {换行}
+                readln(file_in);	{源文件读取从下一行开始}
+                ll := ll + 1; {将行缓冲区的长度+1}
+                line[ll] := ' ' { process end-line }	{行数组最后一个元素为空格}
+  end; 
+  cc := cc + 1; {行指针+1}
+  ch := line[cc] {ch 取 line 中下一个字符} 
+  end {getch}; {结束读取下一字符}
 begin {getsym}
   while ch = ' ' do getch;
   if ch in ['A'..'Z'] then
@@ -135,41 +132,44 @@ if k > nmax then  error(30)
   begin  getch;
 if ch = '=' then
 begin  sym := becomes; getch end
- {added ++++++++++++++++++++++++++++++}
-{added 对">"，"<"，">="，"<="，"<>"记号的识别}
-else if ch = '<' {处理'<'}
-  then begin	
-    getch;	
-    if ch = '='	
-    then begin
-            sym := leq;	{表示小于等于}
-            getch	{读下一个字符}
-        end
-    else if ch = '>' {处理'>'}
-    then begin
-            sym := neq;	{表示不等于}
-            getch
-        end
-    else sym := lss	{表示小于}
+ 
+else  sym := nul;
+ 
 end
+{added ++++++++++++++++++++++++++++++}
+  else if ch = '<' {处理'<'}
+  then begin	
+          getch;	
+          if ch = '='	
+          then begin
+                  sym := leq;	{表示小于等于}
+                  getch	{读下一个字符}
+              end
+          else if ch = '>' {处理'>'}
+          then begin
+                  sym := neq;	{表示不等于}
+                  getch
+              end
+          else sym := lss	{表示小于}
+      end
 
   else if ch = '>' {处理'<'}
   then begin	
-      getch;	
-      if ch = '='	
-      then begin
-              sym := geq;	{表示大于等于}
-              getch	{读下一个字符}
-          end
-      else sym := gtr	{表示大于}
-  end
- {added ++++++++++++++++++++++++++++++}
-else  sym := nul;
-  end else
-  begin  sym := ssym[ch];  getch
-  end
+          getch;	
+          if ch = '='	
+          then begin
+                  sym := geq;	{表示大于等于}
+                  getch	{读下一个字符}
+              end
+          else sym := gtr	{表示大于}
+      end
 
-end {getsym};
+  else {处理其它算符或标点符号} 
+  begin 
+      sym := ssym[ch]; 
+      getch 
+  end 
+end {getsym}; {结束标识符的识别}
 procedure  gen(x : fct; y, z : integer);
 begin
   if cx > cxmax then 
@@ -520,6 +520,7 @@ begin  {主程序}
     assign(file_out,paramstr(2));	{将文件名字符串变量赋值给文件变量}
     reset(file_in);
     rewrite(file_out);	{打开文件}
+
   {add+++++++++++++++++++++++++++++++}
   for ch := 'A' to ';' do  ssym[ch] := nul;
   word[1] := 'BEGIN     '; word[2] := 'CALL      ';
